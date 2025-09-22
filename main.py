@@ -7,6 +7,33 @@ import random
 matrix = []
 matrix_range = 10
 
+colors = [
+    # green (light → dark)
+    (200, 255, 200, 255),
+    (120, 200, 120, 255),
+    (60, 140, 60, 255),
+    (20, 80, 20, 255),
+
+    # blue (light → dark)
+    (200, 200, 255, 255),
+    (120, 120, 200, 255),
+    (60, 60, 140, 255),
+    (20, 20, 80, 255),
+
+    # yellow (light → dark)
+    (255, 255, 200, 255),
+    (220, 220, 120, 255),
+    (180, 180, 60, 255),
+    (120, 120, 20, 255),
+
+    # purple (light → dark)
+    (240, 200, 255, 255),
+    (180, 120, 220, 255),
+    (120, 60, 160, 255),
+    (60, 20, 100, 255),
+]
+new_cmap = mcolors.ListedColormap(colors) 
+
 for _ in range(matrix_range):
     line = []
     for _ in range(matrix_range):
@@ -21,9 +48,6 @@ def compute():
         matrix[i] = line
 
 def display():
-    colors = plt.cm.viridis(np.linspace(0, 1, 256))
-    colors[0] = [0.3, 0.3, 0.3, 1]
-    new_cmap = mcolors.ListedColormap(colors)
     cax = plt.imshow(matrix, cmap=new_cmap, interpolation="nearest", aspect='auto')
     plt.xticks([])
     plt.yticks([])
