@@ -42,29 +42,46 @@ fig.colorbar(cax, fraction=0.03, pad=0.04)
 
 def getNearNeighbor(i:int, j:int, matrix) -> list:
     neighbor = []
-    
-    if i > 0: neighbor.append(matrix[i-1][j])
-    if j > 0: neighbor.append(matrix[i][j-1])
+    e = 0
+    o = 0
+    if j < matrix_range -1: e = 1
+    if j > 0: o = 1
+    if i > 0: 
+        neighbor += matrix[i-1][j-o:j+2*e]
+    neighbor += matrix[i][j-o:j+2*e]
+    if i < matrix_range -1:
+        neighbor += matrix[i+1][j-o:j+2*e]
 
-    if i < matrix_range-1: neighbor.append(matrix[i+1][j])
-    if j < matrix_range-1: neighbor.append(matrix[i][j+1])
+    # if i > 0: neighbor.append(matrix[i-1][j])
+    # if j > 0: neighbor.append(matrix[i][j-1])
 
-    if i > 0 and j > 0: neighbor.append(matrix[i-1][j-1])
-    if i > 0 and j < matrix_range-1: neighbor.append(matrix[i-1][j+1])
+    # if i < matrix_range-1: neighbor.append(matrix[i+1][j])
+    # if j < matrix_range-1: neighbor.append(matrix[i][j+1])
 
-    if i < matrix_range-1 and j > 0: neighbor.append(matrix[i+1][j-1])
-    if i < matrix_range-1 and j < matrix_range-1: neighbor.append(matrix[i+1][j+1])
+    # if i > 0 and j > 0: neighbor.append(matrix[i-1][j-1])
+    # if i > 0 and j < matrix_range-1: neighbor.append(matrix[i-1][j+1])
+
+    # if i < matrix_range-1 and j > 0: neighbor.append(matrix[i+1][j-1])
+    # if i < matrix_range-1 and j < matrix_range-1: neighbor.append(matrix[i+1][j+1])
 
     return neighbor
 
 def getNeighbor(i:int, j:int, matrix) -> list:
-    neighbor = []
-
-    neighbor += matrix[i-2][j-1:j+2]
-    neighbor += matrix[i-1][j-2:j+3]
-    neighbor += matrix[i][j-2:j+3]
-    neighbor += matrix[i+1][j-2:j+3]
-    neighbor += matrix[i+2][j-1:j+2]
+    neighbor = []    
+    e = 0
+    o = 0
+    if j < matrix_range -1: e = 1
+    if j > 0: o = 1
+    if i > 1: 
+        neighbor += matrix[i-2][j-o:j+2*e]
+    if i > 0: 
+        neighbor += matrix[i-1][j-2*o:j+3*e]
+    neighbor += matrix[i][j-2*o:j+3*e]
+    
+    if i < matrix_range-1:
+        neighbor += matrix[i+1][j-2*o:j+3*e]
+    if i < matrix_range-2:
+        neighbor += matrix[i+2][j-o:j+2]
 
     return neighbor
 
@@ -146,7 +163,7 @@ def newBuilding(i:int, j:int, matrix:list) -> int:
     oldBuilding = matrix[i][j]
     building = empty
     neighbor = getNeighbor(i, j, matrix)
-    if neighbor.count(empty) == 21 : return empty
+    if neighbor.count(empty) == len(neighbor) : return empty
     else:
         nearNeighbor = getNearNeighbor(i, j, matrix)
         prob = chanceOfBuilding(i, j, oldBuilding, neighbor, nearNeighbor)
@@ -165,8 +182,8 @@ def newBuilding(i:int, j:int, matrix:list) -> int:
 def compute():
     global matrix
     global old_matrix
-    for i in range(2, matrix_range-2):
-        for j in range(2, matrix_range-2):
+    for i in range(matrix_range):
+        for j in range(matrix_range):
 
             value = newBuilding(i, j, old_matrix)
             
@@ -174,6 +191,25 @@ def compute():
     old_matrix = copy.deepcopy(matrix)
 
 def roadGeneration(matrix):
+    nextTiles = []
+    i = random.randint(matrix_range - matrix_range//2, matrix_range-1)
+    j = random.randint(matrix_range - matrix_range//2, matrix_range-1)
+    matrix[i][j] = road
+    nextTiles.append([i,j])
+    for ii in range(-1, 2):
+        for jj in range(-1, 2):
+            if nextTiles.count((i+ii,j+jj)) == 0:
+                nextTiles.append((i+ii,j+jj))
+
+    for k in range(1, matrix_range*matrix_range//3):
+        print(k)
+        i = nextTiles[k][0]
+        j = nextTiles[k][1]
+        matrix[i][j] = road
+        for ii in range(-1, 2):
+            for jj in range(-1, 2):
+                if nextTiles.count((i+ii,j+jj)) == 0:
+                    nextTiles.append((i+ii,j+jj))
     return
 
 def riverGeneration(matrix):
@@ -183,7 +219,7 @@ def cityGeneration(matrix):
     for i in range(0, 4):
         for j in range(0, 4):
             res = random.randint(0, 10)
-            if res > 3:
+            if res > 3 and matrix[(matrix_range+i)//2][(matrix_range+j)//2] != road:
                 matrix[(matrix_range+i)//2][(matrix_range+j)//2] = ((res%2 + 1) * 2)
     return
 
