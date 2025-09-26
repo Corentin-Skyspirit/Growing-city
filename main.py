@@ -5,18 +5,22 @@ import numpy as np
 import random
 import copy
 
-matrix_range = 10
+matrix_range = 50
 
 empty = 0
 road = 1
 house = 2
-shop = 3
+house2 = 3
+shop = 4
+shop2 = 5
 
 colors = [
     [0.9, 0.9, 0.9, 1.],
     [0.3, 0.3, 0.3, 1.],
     [120/255, 200/255, 120/255, 1.0],
+    [60/255, 140/255, 60/255, 1.0],
     [120/255, 120/255, 200/255, 1.0],
+    [60/255, 60/255, 140/255, 1.0],
 ]
 
 def setup() -> list:
@@ -30,6 +34,11 @@ def setup() -> list:
 
     matrix[matrix_range//2][matrix_range//2] = house
     matrix[matrix_range//2+1][matrix_range//2+1] = house
+    matrix[matrix_range//2+1][matrix_range//2] = shop
+    matrix[matrix_range//2][matrix_range//2+1] = house
+    matrix[matrix_range//2][matrix_range//2+2] = house
+    matrix[matrix_range//2+2][matrix_range//2] = house
+    matrix[matrix_range//2+2][matrix_range//2+2] = house
     
     return matrix
 
@@ -68,15 +77,38 @@ def getNeighbor(i:int, j:int, matrix) -> list:
     return neighbor
 
 def chanceOfBuilding(i:int, j:int, actualBuild: int, neighbor:list, nearNeighbor:list) -> int:
-    if actualBuild != empty: prob = 50 
-    else: prob = 0
-    
-    nearHouseCount = nearNeighbor.count(house)
-    nearShopCount = nearNeighbor.count(shop)
-    prob += nearHouseCount * 2
-    prob += nearShopCount * 4
-    prob += neighbor.count(house) - nearHouseCount
-    prob += (neighbor.count(shop) *2) - nearShopCount
+    nearHouseCount = nearNeighbor.count(house) + nearNeighbor.count(house2)
+    nearShopCount = nearNeighbor.count(shop) + nearNeighbor.count(shop2)
+    prob = 0
+
+    if actualBuild == house: 
+        prob = 70
+        prob += nearHouseCount * 2.5
+        prob += nearShopCount * 5
+        prob += (neighbor.count(shop) * 2) + (neighbor.count(shop2) * 3) - nearShopCount
+        prob += neighbor.count(house) + (neighbor.count(house2) * 1.5) - nearHouseCount
+        prob += neighbor.count(empty) - nearNeighbor.count(empty)
+        if (nearShopCount > 0 and nearHouseCount > 4) :
+            prob += 20
+
+    elif actualBuild == shop: 
+        prob = 70
+        prob += nearHouseCount * 3
+        prob += nearShopCount * 4
+        prob -= neighbor.count(shop) + (neighbor.count(shop2) * 1.5) - nearShopCount
+        prob += (neighbor.count(house) * 2) + (neighbor.count(house2) * 3) - nearHouseCount
+        prob -= neighbor.count(empty)
+        if (nearShopCount < 2 and neighbor.count(house) + (neighbor.count(house2) * 1.5) > 7) :
+            prob += 30
+
+    else: 
+        prob += nearHouseCount * 3
+        prob += nearShopCount * 4.5
+        prob += (neighbor.count(shop) * 2)+ (neighbor.count(shop2) * 2.5) - nearShopCount
+        prob += (neighbor.count(house) * 1.5) + (neighbor.count(house) * 2) - nearHouseCount
+        prob += neighbor.count(empty) - nearNeighbor.count(empty)
+        if (nearShopCount > 0 and nearHouseCount > 2) :
+            prob += 20
 
     return prob
 
@@ -84,21 +116,26 @@ def newBuildingType(i:int, j:int, actualBuild:int, neighbor:list, nearNeighbor:l
     buildingType = empty
     houseChance = 0
     shopChance = 0
-    if actualBuild == house: houseChance += 10
-    elif actualBuild == shop: shopChance += 10
+    if actualBuild == house: houseChance += 5
+    elif actualBuild == shop: shopChance += 5
 
-    houseChance += neighbor.count(shop)
-    houseChance += neighbor.count(empty)
+    houseChance += neighbor.count(shop) + neighbor.count(shop2) * 1.5
+    houseChance += (int)(neighbor.count(empty)/1)
+    if nearNeighbor.count(shop) + nearNeighbor.count(shop2) > 5:
+        houseChance -= 30
 
-    nearShopCount = nearNeighbor.count(shop)
-    shopChance += neighbor.count(house)
+    nearShopCount = nearNeighbor.count(shop) + nearNeighbor.count(shop2) * 1.5
+    shopChance += neighbor.count(house) + neighbor.count(house2)
     shopChance += nearShopCount
-    shopChance -= neighbor.count(shop) - nearShopCount
+    shopChance -= neighbor.count(shop) + neighbor.count(shop2) * 1.5 - nearShopCount
 
+    if houseChance + shopChance < 6:
+        return empty
     if houseChance < shopChance:
         buildingType = shop
     else:
         buildingType = house
+    # print(actualBuild, " - shop:", shopChance, "/ house:", houseChance)
     return buildingType
 
 def houseLevel(h:int, s:int):
@@ -116,13 +153,16 @@ def newBuilding(i:int, j:int, matrix:list) -> int:
     else:
         nearNeighbor = getNearNeighbor(i, j, matrix)
         prob = chanceOfBuilding(i, j, oldBuilding, neighbor, nearNeighbor)
-        if prob > 100: print("oui")
-        building = newBuildingType(i, j, oldBuilding, neighbor, nearNeighbor)
+        if prob < 0: return empty
+        if prob >= 100:
+            if oldBuilding == house: return house2
+            elif oldBuilding == shop: return shop2
+        else:
+            building = newBuildingType(i, j, oldBuilding, neighbor, nearNeighbor)
         if prob < 100:
-            if random.randint(0,100) < prob: building = empty
+            if random.randint(0,100) > prob: building = empty
         
-        print("[", i*matrix_range + j, "] builds: ", oldBuilding, " / ", building, "prob:", prob)
-
+        # print("[", i*matrix_range + j, "] builds: ", oldBuilding, " / ", building, "prob:", prob, "neighbor:", neighbor.count(empty))
     return building
 
 def compute():
@@ -158,6 +198,6 @@ def run(i):
 
 if __name__ == '__main__' :
 
-    ani = FuncAnimation(plt.gcf(), run, interval=2000)
+    ani = FuncAnimation(plt.gcf(), run, interval=1000)
     plt.tight_layout()
     plt.show()
