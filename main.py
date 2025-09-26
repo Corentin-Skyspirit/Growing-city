@@ -31,14 +31,6 @@ def setup() -> list:
         for _ in range(matrix_range):
             line.append(empty)
         matrix.append(line)
-
-    matrix[matrix_range//2][matrix_range//2] = house
-    matrix[matrix_range//2+1][matrix_range//2+1] = house
-    matrix[matrix_range//2+1][matrix_range//2] = shop
-    matrix[matrix_range//2][matrix_range//2+1] = house
-    matrix[matrix_range//2][matrix_range//2+2] = house
-    matrix[matrix_range//2+2][matrix_range//2] = house
-    matrix[matrix_range//2+2][matrix_range//2+2] = house
     
     return matrix
 
@@ -92,11 +84,11 @@ def chanceOfBuilding(i:int, j:int, actualBuild: int, neighbor:list, nearNeighbor
             prob += 20
 
     elif actualBuild == shop: 
-        prob = 70
+        prob = 60
         prob += nearHouseCount * 3
-        prob += nearShopCount * 4
-        prob -= neighbor.count(shop) + (neighbor.count(shop2) * 1.5) - nearShopCount
+        prob += nearShopCount * 3
         prob += (neighbor.count(house) * 2) + (neighbor.count(house2) * 3) - nearHouseCount
+        prob -= neighbor.count(shop) + (neighbor.count(shop2) * 1.5) - nearShopCount
         prob -= neighbor.count(empty)
         if (nearShopCount < 2 and neighbor.count(house) + (neighbor.count(house2) * 1.5) > 7) :
             prob += 30
@@ -110,26 +102,30 @@ def chanceOfBuilding(i:int, j:int, actualBuild: int, neighbor:list, nearNeighbor
         if (nearShopCount > 0 and nearHouseCount > 2) :
             prob += 20
 
+    if neighbor.count(empty) <= 10:
+        prob += 20
+
     return prob
 
 def newBuildingType(i:int, j:int, actualBuild:int, neighbor:list, nearNeighbor:list):
     buildingType = empty
     houseChance = 0
     shopChance = 0
-    if actualBuild == house: houseChance += 5
-    elif actualBuild == shop: shopChance += 5
+    if actualBuild == house: houseChance += 15
+    elif actualBuild == shop: shopChance += 15
 
     houseChance += neighbor.count(shop) + neighbor.count(shop2) * 1.5
     houseChance += (int)(neighbor.count(empty)/1)
     if nearNeighbor.count(shop) + nearNeighbor.count(shop2) > 5:
-        houseChance -= 30
+        houseChance -= 10
 
     nearShopCount = nearNeighbor.count(shop) + nearNeighbor.count(shop2) * 1.5
     shopChance += neighbor.count(house) + neighbor.count(house2)
-    shopChance += nearShopCount
-    shopChance -= neighbor.count(shop) + neighbor.count(shop2) * 1.5 - nearShopCount
+    # shopChance += nearShopCount 
+    # shopChance -= neighbor.count(shop) + neighbor.count(shop2) * 1.5 - nearShopCount
+    shopChance += neighbor.count(shop) + neighbor.count(shop2) * 1.5
 
-    if houseChance + shopChance < 6:
+    if houseChance + shopChance < 3:
         return empty
     if houseChance < shopChance:
         buildingType = shop
@@ -148,6 +144,7 @@ def shopLevel(h:int, s:int):
 
 def newBuilding(i:int, j:int, matrix:list) -> int:
     oldBuilding = matrix[i][j]
+    building = empty
     neighbor = getNeighbor(i, j, matrix)
     if neighbor.count(empty) == 21 : return empty
     else:
@@ -176,10 +173,18 @@ def compute():
             matrix[i][j] = value
     old_matrix = copy.deepcopy(matrix)
 
-def roadGeneration():
+def roadGeneration(matrix):
     return
 
-def riverGeneration():
+def riverGeneration(matrix):
+    return
+
+def cityGeneration(matrix):
+    for i in range(0, 4):
+        for j in range(0, 4):
+            res = random.randint(0, 10)
+            if res > 3:
+                matrix[(matrix_range+i)//2][(matrix_range+j)//2] = ((res%2 + 1) * 2)
     return
 
 def display(matrix):
@@ -193,7 +198,13 @@ def run(i):
     if i == 0:
         matrix = setup()
         old_matrix = copy.deepcopy(matrix)
-    compute()
+    elif i == 1:
+        riverGeneration(matrix)
+        roadGeneration(matrix)
+        cityGeneration(matrix)
+        old_matrix = copy.deepcopy(matrix)
+    else:
+        compute()
     display(matrix)
 
 if __name__ == '__main__' :
